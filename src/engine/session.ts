@@ -33,7 +33,7 @@ function renderScreen(state: SessionState): void {
   clearScreen();
 
   const elapsed = state.startTime ? Date.now() - state.startTime : 0;
-  const speed = calcSpeed(state.currentIndex, elapsed, state.language);
+  const speed = calcSpeed(state.typedChars, elapsed, state.language);
   const correct = countCorrect(state.typedChars, state.targetText);
   const accuracy = calcAccuracy(correct, state.currentIndex);
   const speedLabel = '타수';
@@ -86,7 +86,7 @@ export function runSession(
       const elapsed = state.startTime ? Date.now() - state.startTime : 0;
       const correct = countCorrect(state.typedChars, state.targetText);
       const accuracy = calcAccuracy(correct, state.currentIndex);
-      const speed = calcSpeed(state.currentIndex, elapsed, state.language);
+      const speed = calcSpeed(state.typedChars, elapsed, state.language);
       resolve({
         language: state.language,
         difficulty: state.difficulty,
