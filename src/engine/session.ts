@@ -15,14 +15,7 @@ import {
 } from "../ui/renderer";
 import { calcSpeed, calcAccuracy, countCorrect } from "./stats";
 import { isCtrlC, isEsc, isBackspace, isPrintable, isEnter } from "./input";
-
-function formatTime(ms: number): string {
-  const totalSecs = Math.floor(ms / 1000);
-  const m = Math.floor(totalSecs / 60);
-  const s = totalSecs % 60;
-  if (m > 0) return `${m}분 ${s.toString().padStart(2, "0")}초`;
-  return `${s}초`;
-}
+import { formatTime } from "../utils";
 
 function renderScreen(
   state: SessionState,

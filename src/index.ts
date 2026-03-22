@@ -1,8 +1,15 @@
-import { selectLanguage, selectMode, selectDifficulty } from "./ui/menu";
+import {
+  selectMainMenu,
+  selectLanguage,
+  selectMode,
+  selectDifficulty,
+} from "./ui/menu";
 import { renderResult } from "./ui/result";
 import { runSession } from "./engine/session";
 import { getText } from "./data/index";
 import { getJamoText } from "./data/jamo";
+import { loadRecords, saveRecord } from "./data/records";
+import { showHistory } from "./ui/history";
 import { showCursor, clearScreen, writeLine } from "./ui/renderer";
 import type {
   Language,
@@ -112,80 +119,113 @@ export async function run(): Promise<void> {
     }, countdown.limitMs).unref();
   }
 
-  let language: Language | null = null;
-  let mode: Mode | null = null;
-  let difficulty: Difficulty | null = null;
-  let gameStart: number | null = null;
-
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    if (language === null) {
-      language = await selectLanguage(countdown ?? undefined);
-      if (language === null) break;
-      gameStart = Date.now();
+    // 메인 메뉴
+    const mainMenu = await selectMainMenu(countdown ?? undefined);
+    if (mainMenu === null) continue;
+
+    if (mainMenu === "history") {
+      const records = loadRecords();
+      await showHistory(records, countdown ?? undefined);
+      continue;
     }
-    if (mode === null) {
-      mode = await selectMode(language, countdown ?? undefined);
+
+    // 게임 시작
+    let language: Language | null = null;
+    let mode: Mode | null = null;
+    let difficulty: Difficulty | null = null;
+    let gameStart: number | null = null;
+    let backToMain = false;
+
+    while (!backToMain) {
+      if (language === null) {
+        language = await selectLanguage(countdown ?? undefined);
+        if (language === null) {
+          backToMain = true;
+          break;
+        }
+        gameStart = Date.now();
+      }
       if (mode === null) {
-        language = null;
-        gameStart = null;
-        continue;
+        mode = await selectMode(language, countdown ?? undefined);
+        if (mode === null) {
+          language = null;
+          gameStart = null;
+          continue;
+        }
       }
-    }
-    if (difficulty === null) {
-      difficulty = await selectDifficulty(mode, countdown ?? undefined);
       if (difficulty === null) {
-        mode = null;
+        difficulty = await selectDifficulty(mode, countdown ?? undefined);
+        if (difficulty === null) {
+          mode = null;
+          continue;
+        }
+      }
+
+      const count = mode === "jamo" ? 1 : SENTENCE_COUNT;
+      const texts = generateTexts(count, language, difficulty, mode);
+      const results: SessionResult[] = [];
+      let goMenu = false;
+      let quit = false;
+
+      for (let i = 0; i < count; i++) {
+        const result = await runSession(
+          makeState(texts, i, language, difficulty, mode, countdown),
+        );
+
+        if (result === null) {
+          quit = true;
+          break;
+        }
+        if (result === "menu") {
+          goMenu = true;
+          break;
+        }
+
+        results.push(result);
+      }
+
+      if (quit) {
+        clearScreen();
+        writeLine("  수고하셨습니다! 다음에 또 연습해요. 👋");
+        writeLine();
+        showCursor();
+        return;
+      }
+      if (goMenu) {
+        backToMain = true;
+        break;
+      }
+      if (results.length === 0) continue;
+
+      const elapsedMs = Date.now() - gameStart!;
+      const merged = mergeResults(results);
+
+      // 일반 모드 결과 저장
+      if (mode === "normal") {
+        saveRecord({
+          date: new Date().toISOString(),
+          language: merged.language,
+          difficulty: merged.difficulty,
+          wpm: merged.wpm,
+          accuracy: merged.accuracy,
+          elapsedMs: merged.elapsedMs,
+          totalErrors: merged.totalErrors,
+          totalChars: merged.totalChars,
+        });
+      }
+
+      const action = await renderResult(merged, elapsedMs, countdown);
+      if (action === "retry") {
         continue;
       }
-    }
-
-    const count = mode === "jamo" ? 1 : SENTENCE_COUNT;
-    let texts = generateTexts(count, language, difficulty, mode);
-    const results: SessionResult[] = [];
-    let goMenu = false;
-    let quit = false;
-
-    for (let i = 0; i < count; i++) {
-      const result = await runSession(
-        makeState(texts, i, language, difficulty, mode, countdown),
-      );
-
-      if (result === null) {
-        quit = true;
+      if (action === "menu") {
+        backToMain = true;
         break;
       }
-      if (result === "menu") {
-        goMenu = true;
-        break;
-      }
-
-      results.push(result);
+      break;
     }
-
-    if (quit) break;
-    if (goMenu) {
-      language = null;
-      mode = null;
-      difficulty = null;
-      continue;
-    }
-    if (results.length === 0) continue;
-
-    const elapsedMs = Date.now() - gameStart!;
-    const merged = mergeResults(results);
-    const action = await renderResult(merged, elapsedMs, countdown);
-    if (action === "retry") {
-      continue;
-    }
-    if (action === "menu") {
-      language = null;
-      mode = null;
-      difficulty = null;
-      gameStart = null;
-      continue;
-    }
-    break; // unreachable but keeps the loop structure
   }
 
   clearScreen();

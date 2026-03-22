@@ -65,7 +65,7 @@ export function white(text: string): string {
   return chalk.white(text);
 }
 
-function displayWidth(str: string): number {
+export function displayWidth(str: string): number {
   let width = 0;
   for (const ch of str) {
     const cp = ch.codePointAt(0)!;
@@ -82,6 +82,10 @@ function displayWidth(str: string): number {
     width += isWide ? 2 : 1;
   }
   return width;
+}
+
+export function padStartDW(str: string, width: number): string {
+  return " ".repeat(Math.max(0, width - displayWidth(str))) + str;
 }
 
 export function renderHeader(title: string): void {

@@ -167,6 +167,24 @@ function selectOption(
   });
 }
 
+export async function selectMainMenu(
+  countdown?: Countdown,
+): Promise<"game" | "history" | null> {
+  const options: Option[] = [
+    { label: "게임 시작", description: "타자 연습 시작하기" },
+    { label: "기록 보기", description: "지금까지의 기록 확인" },
+  ];
+  const i = await selectOption(
+    "  TYPRAC — 타자 연습  ",
+    "메뉴 선택:",
+    options,
+    countdown,
+    false,
+  );
+  if (i === null) return null;
+  return i === 0 ? "game" : "history";
+}
+
 export async function selectLanguage(
   countdown?: Countdown,
 ): Promise<Language | null> {
