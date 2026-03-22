@@ -18,7 +18,7 @@ function generateSequence(pool: string[], count: number): string {
   for (let i = 0; i < count; i++) {
     items.push(pickRandom(pool));
   }
-  return items.join('');
+  return items.join(' ');
 }
 
 export function getJamoText(lang: Language, difficulty: Difficulty): string {

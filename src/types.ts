@@ -11,6 +11,7 @@ export interface SessionState {
   startTime: number | null;
   language: Language;
   difficulty: Difficulty;
+  mode: Mode;
 }
 
 export interface SessionResult {

@@ -58,13 +58,13 @@ function renderScreen(state: SessionState): void {
   if (state.currentIndex >= [...state.targetText].length) {
     writeLine('  ' + dim('[Enter/Space] 결과 보기   [Ctrl+R] 재시작   [Esc] 종료'));
   } else {
-    writeLine('  ' + dim('[Ctrl+C] 종료   [Ctrl+R] 재시작'));
+    writeLine('  ' + dim('[Ctrl+C] 종료   [Ctrl+R] 재시작   [Esc] 메인 메뉴'));
   }
 }
 
 export function runSession(
   initialState: SessionState,
-): Promise<SessionResult | 'restart' | null> {
+): Promise<SessionResult | 'restart' | 'menu' | null> {
   return new Promise((resolve) => {
     const state: SessionState = { ...initialState, typedChars: [], currentIndex: 0, startTime: null, totalErrors: 0, errorPositions: new Set() };
     const targetChars = [...state.targetText];
@@ -111,10 +111,23 @@ export function runSession(
         return;
       }
 
+      if (isEsc(key)) {
+        cleanup();
+        resolve('menu');
+        return;
+      }
+
       if (isBackspace(key)) {
         if (state.currentIndex > 0) {
           state.currentIndex--;
           state.typedChars.pop();
+          // In jamo mode, also skip back over spaces
+          if (state.mode === 'jamo') {
+            while (state.currentIndex > 0 && targetChars[state.currentIndex - 1] === ' ') {
+              state.currentIndex--;
+              state.typedChars.pop();
+            }
+          }
         }
         renderScreen(state);
         return;
@@ -146,6 +159,14 @@ export function runSession(
           state.totalErrors++;
         }
         state.currentIndex++;
+
+        // In jamo mode, auto-skip spaces (display only)
+        if (state.mode === 'jamo') {
+          while (state.currentIndex < targetChars.length && targetChars[state.currentIndex] === ' ') {
+            state.typedChars.push(' ');
+            state.currentIndex++;
+          }
+        }
       }
 
       renderScreen(state);

@@ -68,14 +68,22 @@ export async function run(): Promise<void> {
       startTime: null,
       language,
       difficulty,
+      mode,
     };
 
     const result = await runSession(initialState);
 
-    // null = quit, 'restart' = Ctrl+R during typing
+    // null = quit, 'restart' = Ctrl+R, 'menu' = Esc during typing
     if (result === null) break;
     if (result === 'restart') {
-      targetText = null; // 재시작 시 새 텍스트
+      targetText = null;
+      continue;
+    }
+    if (result === 'menu') {
+      language = null;
+      mode = null;
+      difficulty = null;
+      targetText = null;
       continue;
     }
 
