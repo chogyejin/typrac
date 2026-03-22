@@ -34,7 +34,7 @@ function renderScreen(state: SessionState): void {
   const speed = calcSpeed(state.currentIndex, elapsed, state.language);
   const correct = countCorrect(state.typedChars, state.targetText);
   const accuracy = calcAccuracy(correct, state.currentIndex);
-  const speedLabel = state.language === 'ko' ? '타수/분' : '단어/분';
+  const speedLabel = '글자/분';
   const totalChars = [...state.targetText].length;
   const progress = Math.round((state.currentIndex / totalChars) * 100);
 
@@ -120,23 +120,25 @@ export function runSession(
         return;
       }
 
-      if (!isPrintable(key)) return;
+      // Process all characters in the data event (Korean IME sends syllable+space together)
+      const incoming = [...key].filter(isPrintable);
+      if (incoming.length === 0) return;
 
       // Start timer on first keypress
       if (state.startTime === null) {
         state.startTime = Date.now();
       }
 
-      const expected = targetChars[state.currentIndex];
-      const ch = [...key][0]; // take first char only (safety)
-      if (!ch) return;
-
-      state.typedChars.push(ch);
-      if (ch !== expected) {
-        state.errorPositions.add(state.currentIndex);
-        state.totalErrors++;
+      for (const ch of incoming) {
+        if (state.currentIndex >= targetChars.length) break;
+        const expected = targetChars[state.currentIndex];
+        state.typedChars.push(ch);
+        if (ch !== expected) {
+          state.errorPositions.add(state.currentIndex);
+          state.totalErrors++;
+        }
+        state.currentIndex++;
       }
-      state.currentIndex++;
 
       // Completed
       if (state.currentIndex >= targetChars.length) {

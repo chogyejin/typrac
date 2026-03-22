@@ -25,7 +25,7 @@ export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 
   renderHeader('  TYPRAC — 결과  ');
   writeLine();
 
-  const speedLabel = result.language === 'ko' ? '타수/분' : '단어/분';
+  const speedLabel = '글자/분';
 
   writeLine('  ' + bold(speedLabel + ':   ') + yellow(String(result.wpm)));
   writeLine('  ' + bold('정확도:    ') + yellow(result.accuracy.toFixed(1) + '%'));

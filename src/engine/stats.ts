@@ -15,10 +15,9 @@ export function calcKPM(totalSyllables: number, elapsedMs: number): number {
 export function calcSpeed(
   totalTyped: number,
   elapsedMs: number,
-  language: Language,
+  _language: Language,
 ): number {
-  if (language === 'ko') return calcKPM(totalTyped, elapsedMs);
-  return calcWPM(totalTyped, elapsedMs);
+  return calcKPM(totalTyped, elapsedMs);
 }
 
 export function calcAccuracy(
