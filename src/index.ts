@@ -98,6 +98,14 @@ function parseTimeLimit(): number | null {
 export async function run(): Promise<void> {
   setupCleanup();
 
+  const args = process.argv.slice(2);
+  if (args[0] === "records" || args[0] === "r") {
+    const records = loadRecords();
+    await showHistory(records);
+    showCursor();
+    return;
+  }
+
   const cliStart = Date.now();
   const timeLimitMin = parseTimeLimit();
   const countdown: Countdown | null =
