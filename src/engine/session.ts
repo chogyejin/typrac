@@ -17,6 +17,7 @@ import {
   isBackspace,
   isPrintable,
   isCtrlR,
+  isEnter,
 } from './input.js';
 
 function formatTime(ms: number): string {
