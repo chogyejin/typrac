@@ -55,11 +55,7 @@ function renderScreen(state: SessionState): void {
   renderTypingLine(state.targetText, state.typedChars, state.currentIndex);
   writeLine();
   writeLine();
-  if (state.currentIndex >= [...state.targetText].length) {
-    writeLine('  ' + dim('[Enter/Space] 결과 보기   [Ctrl+R] 재시작   [Esc] 종료'));
-  } else {
-    writeLine('  ' + dim('[Ctrl+C] 종료   [Ctrl+R] 재시작   [Esc] 메인 메뉴'));
-  }
+  writeLine('  ' + dim('[Ctrl+C] 종료   [Ctrl+R] 재시작   [Esc] 메인 메뉴'));
 }
 
 export function runSession(
@@ -133,15 +129,6 @@ export function runSession(
         return;
       }
 
-      // Process all characters in the data event (Korean IME sends syllable+space together)
-      // If already completed, wait for Enter or Space to proceed
-      if (state.currentIndex >= targetChars.length) {
-        if (isEnter(key) || key === ' ') {
-          finish();
-        }
-        return;
-      }
-
       const incoming = [...key].filter(isPrintable);
       if (incoming.length === 0) return;
 
@@ -167,6 +154,12 @@ export function runSession(
             state.currentIndex++;
           }
         }
+      }
+
+      if (state.currentIndex >= targetChars.length) {
+        renderScreen(state);
+        finish();
+        return;
       }
 
       renderScreen(state);
