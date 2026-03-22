@@ -49,13 +49,14 @@ const DISPLAY_LIMIT = 10;
 
 function buildAllRows(records: GameRecord[]): FlatRow[] {
   const withIdx = records.map((r, i) => ({ record: r, originalIndex: i }));
+  const byWpmDesc = (a: FlatRow, b: FlatRow) => b.record.wpm - a.record.wpm;
   const enRows = withIdx
     .filter(({ record: r }) => r.language === "en")
-    .reverse()
+    .sort(byWpmDesc)
     .slice(0, DISPLAY_LIMIT);
   const koRows = withIdx
     .filter(({ record: r }) => r.language === "ko")
-    .reverse()
+    .sort(byWpmDesc)
     .slice(0, DISPLAY_LIMIT);
   return [...enRows, ...koRows];
 }
@@ -113,7 +114,9 @@ function renderHistoryScreen(
         "  " +
           bold(cyan(`▌ ${label}`)) +
           "  " +
-          dim(`(${sectionTotal}${fullSuffix}개)`),
+          dim(`(${sectionTotal}${fullSuffix}개)`) +
+          "  " +
+          dim("타수 기준 ↓"),
       );
       writeLine("  " + dim(TABLE_HEADER));
       writeLine("  " + dim(TABLE_SEP));
