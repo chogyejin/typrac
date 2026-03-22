@@ -17,9 +17,9 @@ import {
   padStartDW,
 } from "./renderer";
 import { isCtrlC, isEsc } from "../engine/input";
+import { updateKeyboardLangFromInput, startPolling, stopPolling } from "../keyboardLang";
 import { formatTime } from "../utils";
 
-const LANG_LABEL: Record<string, string> = { en: "영어  ", ko: "한국어" };
 const DIFF_LABEL: Record<string, string> = {
   easy: "쉬움  ",
   medium: "보통  ",
@@ -43,8 +43,32 @@ function formatDate(iso: string): string {
 
 type ConfirmState = { active: true; count: number } | { active: false };
 
+type FlatRow = { record: GameRecord; originalIndex: number };
+
+const DISPLAY_LIMIT = 10;
+
+function buildAllRows(records: GameRecord[]): FlatRow[] {
+  const withIdx = records.map((r, i) => ({ record: r, originalIndex: i }));
+  const enRows = withIdx
+    .filter(({ record: r }) => r.language === "en")
+    .reverse()
+    .slice(0, DISPLAY_LIMIT);
+  const koRows = withIdx
+    .filter(({ record: r }) => r.language === "ko")
+    .reverse()
+    .slice(0, DISPLAY_LIMIT);
+  return [...enRows, ...koRows];
+}
+
+const TABLE_HEADER =
+  "      # │ 날짜             │ 난이도 │  타수 │ 정확도 │      시간 │ 오류";
+const TABLE_SEP =
+  "────────┼──────────────────┼────────┼───────┼────────┼───────────┼─────";
+
 function renderHistoryScreen(
-  records: GameRecord[],
+  allRows: FlatRow[],
+  totalEnCount: number,
+  totalKoCount: number,
   page: number,
   pageSize: number,
   cursor: number,
@@ -56,7 +80,7 @@ function renderHistoryScreen(
   renderHeader("  TYPRAC — 기록  ");
   writeLine();
 
-  if (records.length === 0) {
+  if (allRows.length === 0) {
     writeLine("  " + dim("저장된 기록이 없습니다."));
     writeLine();
     writeLine("  " + dim("[Esc] 돌아가기"));
@@ -64,45 +88,60 @@ function renderHistoryScreen(
     return;
   }
 
-  const total = records.length;
+  const total = allRows.length;
   const totalPages = Math.ceil(total / pageSize);
   const start = page * pageSize;
-  // 화면에 표시되는 순서: 최신순(reversed), 인덱스는 reversed 배열 기준
-  const pageRecords = [...records].reverse().slice(start, start + pageSize);
+  const pageRows = allRows.slice(start, start + pageSize);
 
-  writeLine(
-    "  " +
-      dim(
-        "      # │ 날짜             │ 언어   │ 난이도 │  타수 │ 정확도 │      시간 │ 오류",
-      ),
-  );
-  writeLine(
-    "  " +
-      dim(
-        "────────┼──────────────────┼────────┼────────┼───────┼────────┼───────────┼─────",
-      ),
-  );
+  const enTotal = allRows.filter(({ record: r }) => r.language === "en").length;
+  const koTotal = allRows.length - enTotal;
+  const enFull = totalEnCount === enTotal ? "" : `/${totalEnCount}`;
+  const koFull = totalKoCount === koTotal ? "" : `/${totalKoCount}`;
 
-  pageRecords.forEach((r, idx) => {
-    const globalIdx = start + idx; // reversed 배열 기준 전역 인덱스
+  let lastLang: string | null = null;
+
+  pageRows.forEach((row, idx) => {
+    const globalIdx = start + idx;
+    const lang = row.record.language;
+
+    if (lang !== lastLang) {
+      if (lastLang !== null) writeLine();
+      const sectionTotal = lang === "en" ? enTotal : koTotal;
+      const fullSuffix = lang === "en" ? enFull : koFull;
+      const label = lang === "en" ? "영어" : "한국어";
+      writeLine(
+        "  " +
+          bold(cyan(`▌ ${label}`)) +
+          "  " +
+          dim(`(${sectionTotal}${fullSuffix}개)`),
+      );
+      writeLine("  " + dim(TABLE_HEADER));
+      writeLine("  " + dim(TABLE_SEP));
+      lastLang = lang;
+    }
+
     const isSelected = selected.has(globalIdx);
     const isCursor = cursor === globalIdx;
     const checkbox = isSelected ? cyan("[x]") : dim("[ ]");
-    const num = String(total - globalIdx).padStart(3, " ");
+
+    const rowNum =
+      lang === "en" ? enTotal - globalIdx : koTotal - (globalIdx - enTotal);
+    const num = String(rowNum).padStart(3, " ");
+
+    const r = row.record;
     const date = formatDate(r.date);
-    const lang = LANG_LABEL[r.language] ?? r.language;
     const diff = DIFF_LABEL[r.difficulty] ?? r.difficulty;
     const wpm = String(r.wpm).padStart(5, " ");
     const acc = (r.accuracy.toFixed(1) + "%").padStart(6, " ");
     const time = padStartDW(formatTime(r.elapsedMs), 9);
     const err = String(r.totalErrors).padStart(4, " ");
 
-    const row = `  ${checkbox} ${dim(num + " │")} ${date} ${dim("│")} ${lang} ${dim("│")} ${diff} ${dim("│")} ${yellow(wpm)} ${dim("│")} ${green(acc)} ${dim("│")} ${time} ${dim("│")} ${err}`;
+    const rowStr = `  ${checkbox} ${dim(num + " │")} ${date} ${dim("│")} ${diff} ${dim("│")} ${yellow(wpm)} ${dim("│")} ${green(acc)} ${dim("│")} ${time} ${dim("│")} ${err}`;
 
     if (isCursor) {
-      writeLine(bold(row));
+      writeLine(bold(rowStr));
     } else {
-      writeLine(row);
+      writeLine(rowStr);
     }
   });
 
@@ -150,7 +189,9 @@ function renderHistoryScreen(
     writeLine(
       "  " +
         dim("남은 시간: ") +
-        yellow(m > 0 ? `${m}분 ${s}초 남음` : `${s}초 남음`),
+        yellow(
+          m > 0 ? `${m}분 ${s}초 후 프로세스 종료` : `${s}초 후 프로세스 종료`,
+        ),
     );
   }
 
@@ -165,26 +206,33 @@ export function showHistory(
 
   return new Promise((resolve) => {
     let records = [...initialRecords];
+    let allRows = buildAllRows(records);
     let page = 0;
     let cursor = 0;
     const selected = new Set<number>();
     let confirm: ConfirmState = { active: false };
 
     function totalPages(): number {
-      return Math.max(1, Math.ceil(records.length / PAGE_SIZE));
+      return Math.max(1, Math.ceil(allRows.length / PAGE_SIZE));
     }
 
     function clampCursor(): void {
-      const max = Math.min(PAGE_SIZE, records.length - page * PAGE_SIZE) - 1;
-      cursor = Math.max(
-        page * PAGE_SIZE,
-        Math.min(cursor, page * PAGE_SIZE + Math.max(0, max)),
-      );
+      if (allRows.length === 0) {
+        cursor = 0;
+        return;
+      }
+      const pageStart = page * PAGE_SIZE;
+      const pageEnd = Math.min(pageStart + PAGE_SIZE, allRows.length) - 1;
+      cursor = Math.max(pageStart, Math.min(cursor, pageEnd));
     }
 
-    const render = () =>
+    const render = () => {
+      const totalEnCount = records.filter((r) => r.language === "en").length;
+      const totalKoCount = records.filter((r) => r.language === "ko").length;
       renderHistoryScreen(
-        records,
+        allRows,
+        totalEnCount,
+        totalKoCount,
         page,
         PAGE_SIZE,
         cursor,
@@ -192,29 +240,31 @@ export function showHistory(
         confirm,
         countdown,
       );
+    };
 
     hideCursor();
     render();
+    startPolling(render);
 
     process.stdin.setRawMode(true);
     process.stdin.setEncoding("utf8");
     process.stdin.resume();
 
     function onData(key: string): void {
+      updateKeyboardLangFromInput(key);
       if (isCtrlC(key)) {
         cleanup();
         showCursor();
         process.exit(0);
       }
 
-      // 삭제 확인 모드
       if (confirm.active) {
         if (key === "\r" || key === "\n") {
-          // reversed 인덱스 → 원본 인덱스 변환 후 삭제
           const toDelete = new Set(
-            [...selected].map((i) => records.length - 1 - i),
+            [...selected].map((i) => allRows[i].originalIndex),
           );
           records = records.filter((_, i) => !toDelete.has(i));
+          allRows = buildAllRows(records);
           writeRecords(records);
           selected.clear();
           confirm = { active: false };
@@ -238,21 +288,25 @@ export function showHistory(
         return;
       }
 
-      if (records.length === 0) return;
+      if (allRows.length === 0) return;
 
       if (key === ARROW_UP) {
         if (cursor > page * PAGE_SIZE) {
           cursor--;
         } else if (page > 0) {
           page--;
-          cursor = page * PAGE_SIZE + PAGE_SIZE - 1;
+          cursor = Math.min(
+            page * PAGE_SIZE + PAGE_SIZE - 1,
+            allRows.length - 1,
+          );
         }
         render();
         return;
       }
 
       if (key === ARROW_DOWN) {
-        const lastOnPage = Math.min((page + 1) * PAGE_SIZE, records.length) - 1;
+        const lastOnPage =
+          Math.min((page + 1) * PAGE_SIZE, allRows.length) - 1;
         if (cursor < lastOnPage) {
           cursor++;
         } else if (page < totalPages() - 1) {
@@ -289,7 +343,7 @@ export function showHistory(
 
       if (key === "a" || key === "A") {
         const pageIndices = Array.from(
-          { length: Math.min(PAGE_SIZE, records.length - page * PAGE_SIZE) },
+          { length: Math.min(PAGE_SIZE, allRows.length - page * PAGE_SIZE) },
           (_, i) => page * PAGE_SIZE + i,
         );
         const allSelected = pageIndices.every((i) => selected.has(i));
@@ -310,6 +364,7 @@ export function showHistory(
     }
 
     function cleanup(): void {
+      stopPolling();
       showCursor();
       process.stdin.removeListener("data", onData);
       process.stdin.setRawMode(false);

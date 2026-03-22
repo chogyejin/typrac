@@ -99,6 +99,24 @@ export async function run(): Promise<void> {
   setupCleanup();
 
   const args = process.argv.slice(2);
+  if (args[0] === "--help" || args[0] === "-h") {
+    console.log(
+      [
+        "",
+        "  사용법: typrac [커맨드] [옵션]",
+        "",
+        "  커맨드:",
+        "    (없음)            타자 연습 시작",
+        "    records, r        기록 보기",
+        "",
+        "  옵션:",
+        "    --time, -t <분>   제한 시간 설정 — 시간 초과 시 프로세스 강제 종료 (예: typrac --time 5)",
+        "    --help, -h        도움말 표시",
+        "",
+      ].join("\n"),
+    );
+    process.exit(0);
+  }
   if (args[0] === "records" || args[0] === "r") {
     const records = loadRecords();
     await showHistory(records);
@@ -119,6 +137,7 @@ export async function run(): Promise<void> {
       writeLine(
         `  ${timeLimitMin}분 제한 시간이 종료되었습니다. 수고하셨습니다! 👋`,
       );
+      writeLine(`  (시간 초과로 종료되어 기록이 저장되지 않았습니다)`);
       writeLine();
       showCursor();
       process.exit(0);
@@ -204,6 +223,20 @@ export async function run(): Promise<void> {
 
       const merged = mergeResults(results);
 
+      const isNewRecord =
+        mode === "normal" &&
+        (() => {
+          const prev = loadRecords().filter(
+            (r) =>
+              r.language === merged.language &&
+              r.difficulty === merged.difficulty,
+          );
+          return (
+            prev.length === 0 ||
+            merged.wpm > Math.max(...prev.map((r) => r.wpm))
+          );
+        })();
+
       const onSave =
         mode === "normal"
           ? () => {
@@ -225,6 +258,7 @@ export async function run(): Promise<void> {
         merged.elapsedMs,
         countdown,
         onSave,
+        isNewRecord,
       );
       if (action === "retry") {
         continue;

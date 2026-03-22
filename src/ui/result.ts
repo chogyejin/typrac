@@ -14,6 +14,7 @@ import {
   formatCountdown,
 } from "./renderer";
 import { isCtrlC } from "../engine/input";
+import { startPolling, stopPolling } from "../keyboardLang";
 import { formatTime } from "../utils";
 
 function renderResultScreen(
@@ -23,12 +24,16 @@ function renderResultScreen(
   exitPending: boolean,
   onSave: (() => void) | null,
   saved: boolean,
+  isNewRecord: boolean,
 ): void {
   clearScreen();
   renderHeader("  TYPRAC — 결과  ");
   writeLine();
 
-  writeLine("  " + bold("타수:      ") + yellow(String(result.wpm)));
+  const wpmLine =
+    yellow(String(result.wpm)) +
+    (isNewRecord ? "  " + bold(cyan("★ 신기록!")) : "");
+  writeLine("  " + bold("타수:      ") + wpmLine);
   writeLine(
     "  " + bold("정확도:    ") + yellow(result.accuracy.toFixed(1) + "%"),
   );
@@ -61,6 +66,7 @@ export function renderResult(
   elapsedMs: number,
   countdown: Countdown | null,
   onSave: (() => void) | null = null,
+  isNewRecord = false,
 ): Promise<"retry" | "menu" | "quit"> {
   let exitPending = false;
   let exitTimer: ReturnType<typeof setTimeout> | null = null;
@@ -74,9 +80,11 @@ export function renderResult(
       exitPending,
       onSave,
       saved,
+      isNewRecord,
     );
 
   render();
+  startPolling(render);
 
   return new Promise((resolve) => {
     process.stdin.setRawMode(true);
@@ -124,6 +132,7 @@ export function renderResult(
     }
 
     function cleanup(): void {
+      stopPolling();
       if (exitTimer) clearTimeout(exitTimer);
       showCursor();
       process.stdin.removeListener("data", onData);

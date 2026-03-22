@@ -1,12 +1,13 @@
 import chalk from "chalk";
 import type { Countdown } from "../types";
+import { getKeyboardLang } from "../keyboardLang";
 
 export function formatCountdown(cd: Countdown): string {
   const remaining = Math.max(0, cd.limitMs - (Date.now() - cd.start));
   const totalSec = Math.ceil(remaining / 1000);
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
-  return m > 0 ? `${m}분 ${s}초 남음` : `${s}초 남음`;
+  return m > 0 ? `${m}분 ${s}초 후 프로세스 종료` : `${s}초 후 프로세스 종료`;
 }
 
 export function clearScreen(): void {
@@ -92,11 +93,21 @@ export function renderHeader(title: string): void {
   const BOX = (process.stdout.columns || 80) - 2;
   const line = "─".repeat(BOX);
   writeLine(bold(cyan("┌" + line + "┐")));
+
+  const lang = getKeyboardLang();
+  const badgeText = lang === "ko" ? " 자판: 한글" : " 자판: 영어";
+  const badgeWidth = displayWidth(badgeText);
+  const centerWidth = BOX - badgeWidth;
   const titleWidth = displayWidth(title);
-  const padding = Math.floor((BOX - titleWidth) / 2);
-  const rightPad = BOX - padding - titleWidth;
-  const paddedTitle = " ".repeat(padding) + title + " ".repeat(rightPad);
-  writeLine(bold(cyan("│")) + bold(white(paddedTitle)) + bold(cyan("│")));
+  const padding = Math.floor((centerWidth - titleWidth) / 2);
+  const rightPad = centerWidth - padding - titleWidth;
+  const paddedTitle =
+    " ".repeat(padding) + title + " ".repeat(Math.max(0, rightPad));
+  const coloredBadge = lang === "ko" ? yellow(bold(badgeText)) : cyan(bold(badgeText));
+
+  writeLine(
+    bold(cyan("│")) + bold(white(paddedTitle)) + coloredBadge + bold(cyan("│")),
+  );
   writeLine(bold(cyan("└" + line + "┘")));
 }
 

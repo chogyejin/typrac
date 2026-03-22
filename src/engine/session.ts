@@ -14,7 +14,16 @@ import {
   formatCountdown,
 } from "../ui/renderer";
 import { calcSpeed, calcAccuracy, countCorrect } from "./stats";
-import { isCtrlC, isEsc, isBackspace, isPrintable, isEnter } from "./input";
+import {
+  isCtrlC,
+  isEsc,
+  isBackspace,
+  isPrintable,
+  isEnter,
+  isKoreanChar,
+  isEnglishLetter,
+} from "./input";
+import { getKeyboardLang, updateKeyboardLangFromInput, startPolling, stopPolling } from "../keyboardLang";
 import { formatTime } from "../utils";
 
 function renderScreen(
@@ -35,7 +44,13 @@ function renderScreen(
       ? `  ${state.sentenceNum}/${state.sentenceTotal}`
       : "";
 
-  writeLine(bold(cyan("  TYPRAC")) + (sentenceLabel ? dim(sentenceLabel) : ""));
+  const keyboardLang = getKeyboardLang();
+  const langBadge = keyboardLang === "ko" ? yellow("  자판: 한글") : cyan("  자판: 영어");
+  writeLine(
+    bold(cyan("  TYPRAC")) +
+      langBadge +
+      (sentenceLabel ? dim(sentenceLabel) : ""),
+  );
   renderDivider();
   writeLine(`  ${bold("타수:")}    ${yellow(String(speed))}`);
   writeLine(`  ${bold("정확도:")}  ${yellow(accuracy.toFixed(1) + "%")}`);
@@ -91,6 +106,7 @@ export function runSession(
 
     hideCursor();
     renderScreen(state, false);
+    startPolling(() => renderScreen(state, completed, exitPending));
 
     process.stdin.setRawMode(true);
     process.stdin.setEncoding("utf8");
@@ -101,6 +117,7 @@ export function runSession(
     }, 1000);
 
     function cleanup(): void {
+      stopPolling();
       clearInterval(ticker);
       if (exitTimer) clearTimeout(exitTimer);
       showCursor();
@@ -182,7 +199,12 @@ export function runSession(
 
       if (key.startsWith("\x1b")) return;
 
-      const incoming = [...key].filter(isPrintable);
+      updateKeyboardLangFromInput(key);
+      const incoming = [...key].filter(isPrintable).filter((ch) => {
+        if (state.language === "ko") return !isEnglishLetter(ch);
+        if (state.language === "en") return !isKoreanChar(ch);
+        return true;
+      });
       if (incoming.length === 0) return;
 
       if (state.startTime === null) state.startTime = Date.now();

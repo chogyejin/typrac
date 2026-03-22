@@ -15,6 +15,7 @@ import {
   formatCountdown,
 } from "./renderer";
 import { isCtrlC } from "../engine/input";
+import { updateKeyboardLangFromInput, startPolling, stopPolling } from "../keyboardLang";
 
 const ARROW_UP = "\x1b[A";
 const ARROW_DOWN = "\x1b[B";
@@ -88,18 +89,11 @@ function selectOption(
     let exitTimer: ReturnType<typeof setTimeout> | null = null;
 
     const render = () =>
-      renderMenu(
-        title,
-        subtitle,
-        options,
-        selected,
-        countdown,
-        exitPending,
-        showBack,
-      );
+      renderMenu(title, subtitle, options, selected, countdown, exitPending, showBack);
 
     hideCursor();
     render();
+    startPolling(render);
 
     process.stdin.setRawMode(true);
     process.stdin.setEncoding("utf8");
@@ -109,6 +103,7 @@ function selectOption(
       countdown !== undefined ? setInterval(() => render(), 100) : null;
 
     function onData(key: string): void {
+      updateKeyboardLangFromInput(key);
       if (isCtrlC(key)) {
         if (exitPending) {
           cleanup();
@@ -155,6 +150,7 @@ function selectOption(
     }
 
     function cleanup(): void {
+      stopPolling();
       if (ticker) clearInterval(ticker);
       if (exitTimer) clearTimeout(exitTimer);
       showCursor();
