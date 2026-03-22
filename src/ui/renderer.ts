@@ -1,5 +1,5 @@
-import chalk from 'chalk';
-import type { Countdown } from '../types';
+import chalk from "chalk";
+import type { Countdown } from "../types";
 
 export function formatCountdown(cd: Countdown): string {
   const remaining = Math.max(0, cd.limitMs - (Date.now() - cd.start));
@@ -10,11 +10,11 @@ export function formatCountdown(cd: Countdown): string {
 }
 
 export function clearScreen(): void {
-  process.stdout.write('\x1B[H');
+  process.stdout.write("\x1B[H");
 }
 
 export function clearToEnd(): void {
-  process.stdout.write('\x1B[J');
+  process.stdout.write("\x1B[J");
 }
 
 export function moveTo(row: number, col: number): void {
@@ -22,19 +22,19 @@ export function moveTo(row: number, col: number): void {
 }
 
 export function hideCursor(): void {
-  process.stdout.write('\x1B[?25l');
+  process.stdout.write("\x1B[?25l");
 }
 
 export function showCursor(): void {
-  process.stdout.write('\x1B[?25h');
+  process.stdout.write("\x1B[?25h");
 }
 
 export function write(text: string): void {
   process.stdout.write(text);
 }
 
-export function writeLine(text: string = ''): void {
-  process.stdout.write(text + '\x1B[K\n');
+export function writeLine(text: string = ""): void {
+  process.stdout.write(text + "\x1B[K\n");
 }
 
 export function dim(text: string): string {
@@ -70,15 +70,15 @@ function displayWidth(str: string): number {
   for (const ch of str) {
     const cp = ch.codePointAt(0)!;
     const isWide =
-      (cp >= 0x1100 && cp <= 0x11FF) ||  // Hangul Jamo
-      (cp >= 0x2E80 && cp <= 0x303F) ||  // CJK Radicals / Kangxi
-      (cp >= 0x3040 && cp <= 0x33FF) ||  // Kana, Hangul Compat Jamo, CJK Compat
-      (cp >= 0x3400 && cp <= 0x4DBF) ||  // CJK Extension A
-      (cp >= 0x4E00 && cp <= 0x9FFF) ||  // CJK Unified Ideographs
-      (cp >= 0xAC00 && cp <= 0xD7AF) ||  // Hangul Syllables
-      (cp >= 0xF900 && cp <= 0xFAFF) ||  // CJK Compat Ideographs
-      (cp >= 0xFF01 && cp <= 0xFF60) ||  // Fullwidth Forms
-      (cp >= 0xFFE0 && cp <= 0xFFE6);    // Fullwidth Signs
+      (cp >= 0x1100 && cp <= 0x11ff) || // Hangul Jamo
+      (cp >= 0x2e80 && cp <= 0x303f) || // CJK Radicals / Kangxi
+      (cp >= 0x3040 && cp <= 0x33ff) || // Kana, Hangul Compat Jamo, CJK Compat
+      (cp >= 0x3400 && cp <= 0x4dbf) || // CJK Extension A
+      (cp >= 0x4e00 && cp <= 0x9fff) || // CJK Unified Ideographs
+      (cp >= 0xac00 && cp <= 0xd7af) || // Hangul Syllables
+      (cp >= 0xf900 && cp <= 0xfaff) || // CJK Compat Ideographs
+      (cp >= 0xff01 && cp <= 0xff60) || // Fullwidth Forms
+      (cp >= 0xffe0 && cp <= 0xffe6); // Fullwidth Signs
     width += isWide ? 2 : 1;
   }
   return width;
@@ -86,18 +86,18 @@ function displayWidth(str: string): number {
 
 export function renderHeader(title: string): void {
   const BOX = (process.stdout.columns || 80) - 2;
-  const line = '─'.repeat(BOX);
-  writeLine(bold(cyan('┌' + line + '┐')));
+  const line = "─".repeat(BOX);
+  writeLine(bold(cyan("┌" + line + "┐")));
   const titleWidth = displayWidth(title);
   const padding = Math.floor((BOX - titleWidth) / 2);
   const rightPad = BOX - padding - titleWidth;
-  const paddedTitle = ' '.repeat(padding) + title + ' '.repeat(rightPad);
-  writeLine(bold(cyan('│')) + bold(white(paddedTitle)) + bold(cyan('│')));
-  writeLine(bold(cyan('└' + line + '┘')));
+  const paddedTitle = " ".repeat(padding) + title + " ".repeat(rightPad);
+  writeLine(bold(cyan("│")) + bold(white(paddedTitle)) + bold(cyan("│")));
+  writeLine(bold(cyan("└" + line + "┘")));
 }
 
 export function renderDivider(): void {
-  writeLine(dim('─'.repeat(52)));
+  writeLine(dim("─".repeat(52)));
 }
 
 export function renderTypingLine(
@@ -106,7 +106,7 @@ export function renderTypingLine(
   currentIndex: number,
 ): void {
   const chars = [...targetText];
-  let output = '';
+  let output = "";
 
   for (let i = 0; i < chars.length; i++) {
     const ch = chars[i];

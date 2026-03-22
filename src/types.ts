@@ -1,9 +1,9 @@
-export type Language = 'en' | 'ko';
-export type Difficulty = 'easy' | 'medium' | 'hard';
-export type Mode = 'normal' | 'jamo';
+export type Language = "en" | "ko";
+export type Difficulty = "easy" | "medium" | "hard";
+export type Mode = "normal" | "jamo";
 
 export interface Countdown {
-  start: number;  // when CLI started
+  start: number; // when CLI started
   limitMs: number;
 }
 
