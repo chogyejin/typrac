@@ -1,0 +1,41 @@
+{
+  "name": "typrac",
+  "version": "1.0.0",
+  "description": "CLI typing practice app — Korean & English",
+  "type": "module",
+  "bin": {
+    "typrac": "./bin/typrac.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "bin/",
+    "dist/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "typing",
+    "practice",
+    "cli",
+    "korean",
+    "english",
+    "wpm"
+  ],
+  "license": "MIT"
+}
