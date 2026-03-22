@@ -4,7 +4,9 @@ import { runSession } from './engine/session';
 import { getText } from './data/index';
 import { getJamoText } from './data/jamo';
 import { showCursor, clearScreen, writeLine } from './ui/renderer';
-import type { Language, Difficulty, Mode, SessionState } from './types';
+import type { Language, Difficulty, Mode, SessionState, SessionResult } from './types';
+
+const SENTENCE_COUNT = 3;
 
 function setupCleanup(): void {
   const cleanup = (): void => {
@@ -19,13 +21,17 @@ function setupCleanup(): void {
 }
 
 function makeState(
-  targetText: string,
+  texts: string[],
+  index: number,
   language: Language,
   difficulty: Difficulty,
   mode: Mode,
 ): SessionState {
   return {
-    targetText,
+    targetText: texts[index],
+    nextText: index + 1 < texts.length ? texts[index + 1] : null,
+    sentenceNum: index + 1,
+    sentenceTotal: texts.length,
     typedChars: [],
     currentIndex: 0,
     errorPositions: new Set(),
@@ -37,13 +43,30 @@ function makeState(
   };
 }
 
+function mergeResults(results: SessionResult[]): SessionResult {
+  return {
+    language: results[0].language,
+    difficulty: results[0].difficulty,
+    wpm: Math.round(results.reduce((s, r) => s + r.wpm, 0) / results.length),
+    accuracy: Math.round(results.reduce((s, r) => s + r.accuracy, 0) / results.length * 10) / 10,
+    elapsedMs: results.reduce((s, r) => s + r.elapsedMs, 0),
+    totalErrors: results.reduce((s, r) => s + r.totalErrors, 0),
+    totalChars: results.reduce((s, r) => s + r.totalChars, 0),
+  };
+}
+
+function generateTexts(count: number, lang: Language, diff: Difficulty, mode: Mode): string[] {
+  return Array.from({ length: count }, () =>
+    mode === 'jamo' ? getJamoText(lang, diff) : getText(lang, diff)
+  );
+}
+
 export async function run(): Promise<void> {
   setupCleanup();
 
   let language: Language | null = null;
   let mode: Mode | null = null;
   let difficulty: Difficulty | null = null;
-  let targetText: string | null = null;
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -51,32 +74,43 @@ export async function run(): Promise<void> {
       language = await selectLanguage();
       if (language === null) break;
     }
-
     if (mode === null) {
       mode = await selectMode(language);
       if (mode === null) { language = null; continue; }
     }
-
     if (difficulty === null) {
       difficulty = await selectDifficulty(mode);
       if (difficulty === null) { mode = null; continue; }
     }
 
-    if (targetText === null) {
-      targetText = mode === 'jamo'
-        ? getJamoText(language, difficulty)
-        : getText(language, difficulty);
+    const count = mode === 'jamo' ? 1 : SENTENCE_COUNT;
+    let texts = generateTexts(count, language, difficulty, mode);
+    const results: SessionResult[] = [];
+    let goMenu = false;
+    let quit = false;
+
+    for (let i = 0; i < count; i++) {
+      const result = await runSession(makeState(texts, i, language, difficulty, mode));
+
+      if (result === null) { quit = true; break; }
+      if (result === 'menu') { goMenu = true; break; }
+      if (result === 'restart') {
+        texts = generateTexts(count, language, difficulty, mode);
+        results.length = 0;
+        i = -1;
+        continue;
+      }
+
+      results.push(result);
     }
 
-    const result = await runSession(makeState(targetText, language, difficulty, mode));
+    if (quit) break;
+    if (goMenu) { language = null; mode = null; difficulty = null; continue; }
+    if (results.length === 0) continue;
 
-    if (result === null) break;
-    if (result === 'restart') { targetText = null; continue; }
-    if (result === 'menu') { language = null; mode = null; difficulty = null; targetText = null; continue; }
-
-    const action = await renderResult(result);
+    const action = await renderResult(mergeResults(results));
     if (action === 'retry') continue;
-    if (action === 'menu') { language = null; mode = null; difficulty = null; targetText = null; continue; }
+    if (action === 'menu') { language = null; mode = null; difficulty = null; continue; }
     break;
   }
 

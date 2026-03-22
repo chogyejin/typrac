@@ -4,6 +4,9 @@ export type Mode = 'normal' | 'jamo';
 
 export interface SessionState {
   targetText: string;
+  nextText: string | null;
+  sentenceNum: number;
+  sentenceTotal: number;
   typedChars: string[];
   currentIndex: number;
   errorPositions: Set<number>;
