@@ -52,11 +52,24 @@ export function white(text: string): string {
   return chalk.white(text);
 }
 
+function displayWidth(str: string): number {
+  let width = 0;
+  for (const ch of str) {
+    const cp = ch.codePointAt(0)!;
+    // CJK characters occupy 2 columns
+    width += (cp >= 0x1100 && cp <= 0xFFEF) ? 2 : 1;
+  }
+  return width;
+}
+
 export function renderHeader(title: string): void {
-  const line = '─'.repeat(50);
+  const BOX = 50;
+  const line = '─'.repeat(BOX);
   writeLine(bold(cyan('┌' + line + '┐')));
-  const padding = Math.floor((50 - title.length) / 2);
-  const paddedTitle = ' '.repeat(padding) + title + ' '.repeat(50 - padding - title.length);
+  const titleWidth = displayWidth(title);
+  const padding = Math.floor((BOX - titleWidth) / 2);
+  const rightPad = BOX - padding - titleWidth;
+  const paddedTitle = ' '.repeat(padding) + title + ' '.repeat(rightPad);
   writeLine(bold(cyan('│')) + bold(white(paddedTitle)) + bold(cyan('│')));
   writeLine(bold(cyan('└' + line + '┘')));
 }
