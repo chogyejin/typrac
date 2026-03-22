@@ -56,8 +56,17 @@ function displayWidth(str: string): number {
   let width = 0;
   for (const ch of str) {
     const cp = ch.codePointAt(0)!;
-    // CJK characters occupy 2 columns
-    width += (cp >= 0x1100 && cp <= 0xFFEF) ? 2 : 1;
+    const isWide =
+      (cp >= 0x1100 && cp <= 0x11FF) ||  // Hangul Jamo
+      (cp >= 0x2E80 && cp <= 0x303F) ||  // CJK Radicals / Kangxi
+      (cp >= 0x3040 && cp <= 0x33FF) ||  // Kana, Hangul Compat Jamo, CJK Compat
+      (cp >= 0x3400 && cp <= 0x4DBF) ||  // CJK Extension A
+      (cp >= 0x4E00 && cp <= 0x9FFF) ||  // CJK Unified Ideographs
+      (cp >= 0xAC00 && cp <= 0xD7AF) ||  // Hangul Syllables
+      (cp >= 0xF900 && cp <= 0xFAFF) ||  // CJK Compat Ideographs
+      (cp >= 0xFF01 && cp <= 0xFF60) ||  // Fullwidth Forms
+      (cp >= 0xFFE0 && cp <= 0xFFE6);    // Fullwidth Signs
+    width += isWide ? 2 : 1;
   }
   return width;
 }

@@ -21,48 +21,6 @@ function formatTime(ms: number): string {
   return `${s}.${t}s`;
 }
 
-export function renderBetweenSentences(current: number, total: number): Promise<'continue' | 'menu' | null> {
-  clearScreen();
-  renderHeader(`  TYPRAC — ${current}/${total} 완료  `);
-  writeLine();
-  writeLine('  ' + green(`✓ ${current}번째 문장 완료!`));
-  writeLine();
-  writeLine('  ' + bold('다음 문장으로 넘어갈까요?'));
-  writeLine();
-  renderDivider();
-  writeLine();
-  writeLine('  ' + yellow('[Enter/Space]') + '  다음 문장');
-  writeLine('  ' + cyan('[M]') + '           메인 메뉴');
-
-  return new Promise((resolve) => {
-    process.stdin.setRawMode(true);
-    process.stdin.setEncoding('utf8');
-    process.stdin.resume();
-
-    function onData(key: string): void {
-      const k = key.toLowerCase();
-      if (k === '\r' || k === '\n' || k === ' ') {
-        cleanup();
-        resolve('continue');
-      } else if (k === 'm') {
-        cleanup();
-        resolve('menu');
-      } else if (isCtrlC(key)) {
-        cleanup();
-        resolve(null);
-      }
-    }
-
-    function cleanup(): void {
-      process.stdin.removeListener('data', onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-    }
-
-    process.stdin.on('data', onData);
-  });
-}
-
 export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 'quit'> {
   clearScreen();
   renderHeader('  TYPRAC — 결과  ');
