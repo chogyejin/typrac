@@ -1,6 +1,7 @@
-import type { SessionState, SessionResult } from '../types';
+import type { SessionState, SessionResult } from "../types";
 import {
   clearScreen,
+  clearToEnd,
   writeLine,
   bold,
   cyan,
@@ -8,70 +9,80 @@ import {
   yellow,
   renderDivider,
   renderTypingLine,
-} from '../ui/renderer';
-import { calcSpeed, calcAccuracy, countCorrect } from './stats';
-import {
-  isCtrlC,
-  isEsc,
-  isBackspace,
-  isPrintable,
-  isCtrlR,
-  isEnter,
-} from './input';
+  hideCursor,
+  showCursor,
+  formatCountdown,
+} from "../ui/renderer";
+import { calcSpeed, calcAccuracy, countCorrect } from "./stats";
+import { isCtrlC, isEsc, isBackspace, isPrintable, isEnter } from "./input";
 
 function formatTime(ms: number): string {
-  const totalTenths = Math.floor(ms / 100);
-  const m = Math.floor(totalTenths / 600);
-  const s = Math.floor((totalTenths % 600) / 10);
-  const t = totalTenths % 10;
-  if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}.${t}s`;
-  return `${s}.${t}s`;
+  const totalSecs = Math.floor(ms / 1000);
+  const m = Math.floor(totalSecs / 60);
+  const s = totalSecs % 60;
+  if (m > 0) return `${m}분 ${s.toString().padStart(2, "0")}초`;
+  return `${s}초`;
 }
 
-function renderScreen(state: SessionState, completed: boolean): void {
+function renderScreen(
+  state: SessionState,
+  completed: boolean,
+  exitPending = false,
+): void {
   clearScreen();
 
-  const elapsed = state.startTime ? Date.now() - state.startTime : 0;
-  const speed = calcSpeed(state.typedChars, elapsed, state.language);
+  const typingElapsed = state.startTime ? Date.now() - state.startTime : 0;
+  const speed = calcSpeed(state.typedChars, typingElapsed, state.language);
   const correct = countCorrect(state.typedChars, state.targetText);
   const accuracy = calcAccuracy(correct, state.currentIndex);
   const totalChars = [...state.targetText].length;
   const progress = Math.round((state.currentIndex / totalChars) * 100);
-  const sentenceLabel = state.sentenceTotal > 1 ? `  ${state.sentenceNum}/${state.sentenceTotal}` : '';
+  const sentenceLabel =
+    state.sentenceTotal > 1
+      ? `  ${state.sentenceNum}/${state.sentenceTotal}`
+      : "";
 
-  writeLine(bold(cyan('  TYPRAC')) + (sentenceLabel ? dim(sentenceLabel) : ''));
+  writeLine(bold(cyan("  TYPRAC")) + (sentenceLabel ? dim(sentenceLabel) : ""));
   renderDivider();
-  writeLine(
-    `  ${bold('타수:')} ${yellow(String(speed).padEnd(6))}` +
-    `${bold('정확도:')} ${yellow(accuracy.toFixed(1) + '%').padEnd(10)}` +
-    `${bold('시간:')} ${yellow(formatTime(elapsed)).padEnd(8)}` +
-    `${bold('진행:')} ${yellow(progress + '%')}`,
-  );
+  writeLine(`  ${bold("타수:")}    ${yellow(String(speed))}`);
+  writeLine(`  ${bold("정확도:")}  ${yellow(accuracy.toFixed(1) + "%")}`);
+  writeLine(`  ${bold("시간:")}    ${yellow(formatTime(typingElapsed))}`);
+  writeLine(`  ${bold("진행:")}    ${yellow(progress + "%")}`);
   renderDivider();
   writeLine();
-  writeLine('  ' + bold('목표:'));
-  process.stdout.write('  ');
+  writeLine("  " + bold("목표:"));
+  process.stdout.write("\x1b#6  ");
   renderTypingLine(state.targetText, state.typedChars, state.currentIndex);
+  process.stdout.write("\x1B[K\n");
   writeLine();
 
   if (state.nextText !== null) {
     writeLine();
-    writeLine('  ' + dim('다음:'));
-    writeLine('  ' + dim(state.nextText));
+    writeLine("  " + dim("다음:"));
+    writeLine("  " + dim(state.nextText));
   }
 
   writeLine();
-  if (completed) {
-    const hint = state.nextText !== null ? '[Enter] 다음 문장' : '[Enter] 결과 보기';
-    writeLine('  ' + dim(`${hint}   [Esc] 메인 메뉴`));
+  if (exitPending) {
+    writeLine("  " + yellow("한 번 더 누르면 종료됩니다."));
+  } else if (completed) {
+    const hint =
+      state.nextText !== null ? "[Enter] 다음 문장" : "[Enter] 결과 보기";
+    writeLine("  " + dim(`${hint}   [Esc] 메인 메뉴`));
   } else {
-    writeLine('  ' + dim('[Ctrl+C] 종료   [Ctrl+R] 재시작   [Esc] 메인 메뉴'));
+    writeLine("  " + dim("[Ctrl+C] 종료   [Esc] 메인 메뉴"));
   }
+  if (state.countdown !== null) {
+    writeLine(
+      "  " + dim("남은 시간: ") + yellow(formatCountdown(state.countdown)),
+    );
+  }
+  clearToEnd();
 }
 
 export function runSession(
   initialState: SessionState,
-): Promise<SessionResult | 'restart' | 'menu' | null> {
+): Promise<SessionResult | "menu" | null> {
   return new Promise((resolve) => {
     const state: SessionState = {
       ...initialState,
@@ -83,21 +94,33 @@ export function runSession(
     };
     const targetChars = [...state.targetText];
     let completed = false;
+    let completedAt: number | null = null;
+    let exitPending = false;
+    let exitTimer: ReturnType<typeof setTimeout> | null = null;
 
+    hideCursor();
     renderScreen(state, false);
 
     process.stdin.setRawMode(true);
-    process.stdin.setEncoding('utf8');
+    process.stdin.setEncoding("utf8");
     process.stdin.resume();
 
+    const ticker = setInterval(() => {
+      if (!completed) renderScreen(state, false, exitPending);
+    }, 1000);
+
     function cleanup(): void {
-      process.stdin.removeAllListeners('data');
+      clearInterval(ticker);
+      if (exitTimer) clearTimeout(exitTimer);
+      showCursor();
+      process.stdin.removeAllListeners("data");
       process.stdin.setRawMode(false);
       process.stdin.pause();
     }
 
     function buildResult(): SessionResult {
-      const elapsed = state.startTime ? Date.now() - state.startTime : 0;
+      const elapsed =
+        (completedAt ?? Date.now()) - (state.startTime ?? Date.now());
       const correct = countCorrect(state.typedChars, state.targetText);
       return {
         language: state.language,
@@ -105,36 +128,68 @@ export function runSession(
         wpm: calcSpeed(state.typedChars, elapsed, state.language),
         accuracy: calcAccuracy(correct, state.currentIndex),
         elapsedMs: elapsed,
-        totalErrors: state.totalErrors,
+        totalErrors: state.currentIndex - correct,
         totalChars: state.currentIndex,
       };
     }
 
-    process.stdin.on('data', (key: string) => {
-      if (isCtrlC(key)) { cleanup(); resolve(null); return; }
-      if (isEsc(key)) { cleanup(); resolve('menu'); return; }
-      if (isCtrlR(key)) { cleanup(); resolve('restart'); return; }
+    process.stdin.on("data", (key: string) => {
+      if (isCtrlC(key)) {
+        if (exitPending) {
+          cleanup();
+          resolve(null);
+          return;
+        }
+        exitPending = true;
+        renderScreen(state, completed, true);
+        exitTimer = setTimeout(() => {
+          exitPending = false;
+          exitTimer = null;
+          renderScreen(state, completed, false);
+        }, 2000);
+        return;
+      }
+      if (isEsc(key)) {
+        cleanup();
+        resolve("menu");
+        return;
+      }
 
       // Completed: wait for Enter
       if (completed) {
-        if (isEnter(key)) { cleanup(); resolve(buildResult()); }
+        if (isEnter(key)) {
+          cleanup();
+          resolve(buildResult());
+        }
         return;
       }
 
       if (isBackspace(key)) {
         if (state.currentIndex > 0) {
-          state.currentIndex--;
-          state.typedChars.pop();
-          if (state.mode === 'jamo') {
-            while (state.currentIndex > 0 && targetChars[state.currentIndex - 1] === ' ') {
-              state.currentIndex--;
+          if (state.mode === "jamo") {
+            // 후미 자동 공백 제거
+            while (
+              state.typedChars.length > 0 &&
+              state.typedChars[state.typedChars.length - 1] === " "
+            ) {
               state.typedChars.pop();
+              state.currentIndex--;
             }
+            // 실제 글자 제거
+            if (state.currentIndex > 0) {
+              state.typedChars.pop();
+              state.currentIndex--;
+            }
+          } else {
+            state.currentIndex--;
+            state.typedChars.pop();
           }
         }
         renderScreen(state, false);
         return;
       }
+
+      if (key.startsWith("\x1b")) return;
 
       const incoming = [...key].filter(isPrintable);
       if (incoming.length === 0) return;
@@ -151,9 +206,12 @@ export function runSession(
         }
         state.currentIndex++;
 
-        if (state.mode === 'jamo') {
-          while (state.currentIndex < targetChars.length && targetChars[state.currentIndex] === ' ') {
-            state.typedChars.push(' ');
+        if (state.mode === "jamo") {
+          while (
+            state.currentIndex < targetChars.length &&
+            targetChars[state.currentIndex] === " "
+          ) {
+            state.typedChars.push(" ");
             state.currentIndex++;
           }
         }
@@ -161,6 +219,7 @@ export function runSession(
 
       if (state.currentIndex >= targetChars.length) {
         completed = true;
+        completedAt = Date.now();
         renderScreen(state, true);
         return;
       }
