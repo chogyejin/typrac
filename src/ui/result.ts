@@ -12,12 +12,13 @@ import {
 } from './renderer.js';
 import { isCtrlC, isEsc } from '../engine/input.js';
 
-function formatTime(s: number): string {
-  const m = Math.floor(s / 60);
-  const ss = s % 60;
-  return m > 0
-    ? `${m}m ${ss.toString().padStart(2, '0')}s`
-    : `${s}s`;
+function formatTime(ms: number): string {
+  const totalTenths = Math.floor(ms / 100);
+  const m = Math.floor(totalTenths / 600);
+  const s = Math.floor((totalTenths % 600) / 10);
+  const t = totalTenths % 10;
+  if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}.${t}s`;
+  return `${s}.${t}s`;
 }
 
 export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 'quit'> {
@@ -29,7 +30,7 @@ export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 
 
   writeLine('  ' + bold(speedLabel + ':   ') + yellow(String(result.wpm)));
   writeLine('  ' + bold('정확도:    ') + yellow(result.accuracy.toFixed(1) + '%'));
-  writeLine('  ' + bold('시간:      ') + yellow(formatTime(result.elapsedSeconds)));
+  writeLine('  ' + bold('시간:      ') + yellow(formatTime(result.elapsedMs)));
   writeLine('  ' + bold('오류:      ') + yellow(String(result.totalErrors)));
   writeLine('  ' + bold('입력 글자: ') + yellow(String(result.totalChars)));
   writeLine();

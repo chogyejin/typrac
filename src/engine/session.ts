@@ -20,11 +20,12 @@ import {
 } from './input.js';
 
 function formatTime(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const ss = s % 60;
-  if (m > 0) return `${m}m ${ss}s`;
-  return `${s}s`;
+  const totalTenths = Math.floor(ms / 100);
+  const m = Math.floor(totalTenths / 600);
+  const s = Math.floor((totalTenths % 600) / 10);
+  const t = totalTenths % 10;
+  if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}.${t}s`;
+  return `${s}.${t}s`;
 }
 
 function renderScreen(state: SessionState): void {
@@ -86,7 +87,7 @@ export function runSession(
         difficulty: state.difficulty,
         wpm: speed,
         accuracy,
-        elapsedSeconds: Math.round(elapsed / 1000),
+        elapsedMs: elapsed,
         totalErrors: state.totalErrors,
         totalChars: state.currentIndex,
       });

@@ -17,7 +17,7 @@ export interface SessionResult {
   difficulty: Difficulty;
   wpm: number;
   accuracy: number;
-  elapsedSeconds: number;
+  elapsedMs: number;
   totalErrors: number;
   totalChars: number;
 }
