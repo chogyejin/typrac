@@ -34,7 +34,7 @@ function renderScreen(state: SessionState): void {
   const speed = calcSpeed(state.currentIndex, elapsed, state.language);
   const correct = countCorrect(state.typedChars, state.targetText);
   const accuracy = calcAccuracy(correct, state.currentIndex);
-  const speedLabel = state.language === 'ko' ? 'KPM' : 'WPM';
+  const speedLabel = state.language === 'ko' ? '타수/분' : '단어/분';
   const totalChars = [...state.targetText].length;
   const progress = Math.round((state.currentIndex / totalChars) * 100);
 
@@ -42,18 +42,18 @@ function renderScreen(state: SessionState): void {
   renderDivider();
   writeLine(
     `  ${bold(speedLabel + ':')} ${yellow(String(speed).padEnd(6))}` +
-    `${bold('Accuracy:')} ${yellow(accuracy.toFixed(1) + '%').padEnd(10)}` +
-    `${bold('Time:')} ${yellow(formatTime(elapsed)).padEnd(8)}` +
-    `${bold('Progress:')} ${yellow(progress + '%')}`,
+    `${bold('정확도:')} ${yellow(accuracy.toFixed(1) + '%').padEnd(10)}` +
+    `${bold('시간:')} ${yellow(formatTime(elapsed)).padEnd(8)}` +
+    `${bold('진행:')} ${yellow(progress + '%')}`,
   );
   renderDivider();
   writeLine();
-  writeLine('  ' + bold('Target:'));
+  writeLine('  ' + bold('목표:'));
   process.stdout.write('  ');
   renderTypingLine(state.targetText, state.typedChars, state.currentIndex);
   writeLine();
   writeLine();
-  writeLine('  ' + dim('[Esc/Ctrl+C] Quit   [Ctrl+R] Restart'));
+  writeLine('  ' + dim('[Esc/Ctrl+C] 종료   [Ctrl+R] 재시작'));
 }
 
 export function runSession(

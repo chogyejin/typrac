@@ -22,22 +22,22 @@ function formatTime(s: number): string {
 
 export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 'quit'> {
   clearScreen();
-  renderHeader('  TYPRAC — Results  ');
+  renderHeader('  TYPRAC — 결과  ');
   writeLine();
 
-  const speedLabel = result.language === 'ko' ? 'KPM' : 'WPM';
+  const speedLabel = result.language === 'ko' ? '타수/분' : '단어/분';
 
-  writeLine('  ' + bold(speedLabel + ':      ') + yellow(String(result.wpm)));
-  writeLine('  ' + bold('Accuracy:  ') + yellow(result.accuracy.toFixed(1) + '%'));
-  writeLine('  ' + bold('Time:      ') + yellow(formatTime(result.elapsedSeconds)));
-  writeLine('  ' + bold('Errors:    ') + yellow(String(result.totalErrors)));
-  writeLine('  ' + bold('Chars:     ') + yellow(String(result.totalChars)));
+  writeLine('  ' + bold(speedLabel + ':   ') + yellow(String(result.wpm)));
+  writeLine('  ' + bold('정확도:    ') + yellow(result.accuracy.toFixed(1) + '%'));
+  writeLine('  ' + bold('시간:      ') + yellow(formatTime(result.elapsedSeconds)));
+  writeLine('  ' + bold('오류:      ') + yellow(String(result.totalErrors)));
+  writeLine('  ' + bold('입력 글자: ') + yellow(String(result.totalChars)));
   writeLine();
   renderDivider();
   writeLine();
-  writeLine('  ' + green('[R]') + '  Retry same text');
-  writeLine('  ' + cyan('[M]') + '  Main Menu');
-  writeLine('  ' + dim('[Q/Esc]') + '  Quit');
+  writeLine('  ' + green('[R]') + '  같은 문장 다시 하기');
+  writeLine('  ' + cyan('[M]') + '  메인 메뉴');
+  writeLine('  ' + dim('[Q/Esc]') + '  종료');
 
   return new Promise((resolve) => {
     process.stdin.setRawMode(true);

@@ -80,7 +80,7 @@ export async function run(): Promise<void> {
   }
 
   clearScreen();
-  writeLine('  Bye! Keep practicing. 👋');
+  writeLine('  수고하셨습니다! 다음에 또 연습해요. 👋');
   writeLine();
   showCursor();
 }

@@ -40,15 +40,15 @@ function waitKey(options: string[]): Promise<string | null> {
 
 export async function selectLanguage(): Promise<Language | null> {
   clearScreen();
-  renderHeader('  TYPRAC — Typing Practice  ');
+  renderHeader('  TYPRAC — 타자 연습  ');
   writeLine();
-  writeLine('  ' + bold('Select Language:'));
+  writeLine('  ' + bold('언어 선택:'));
   writeLine();
-  writeLine('    ' + yellow('[1]') + '  English');
-  writeLine('    ' + yellow('[2]') + '  한국어 (Korean)');
+  writeLine('    ' + yellow('[1]') + '  English (영어)');
+  writeLine('    ' + yellow('[2]') + '  한국어');
   writeLine();
   renderDivider();
-  writeLine('  ' + dim('[Esc/Ctrl+C] Quit'));
+  writeLine('  ' + dim('[Esc/Ctrl+C] 종료'));
 
   const key = await waitKey(['1', '2']);
   if (key === null) return null;
@@ -57,16 +57,16 @@ export async function selectLanguage(): Promise<Language | null> {
 
 export async function selectDifficulty(): Promise<Difficulty | null> {
   clearScreen();
-  renderHeader('  TYPRAC — Select Difficulty  ');
+  renderHeader('  TYPRAC — 난이도 선택  ');
   writeLine();
-  writeLine('  ' + bold('Select Difficulty:'));
+  writeLine('  ' + bold('난이도 선택:'));
   writeLine();
-  writeLine('    ' + green('[1]') + '  Easy    — short, simple phrases');
-  writeLine('    ' + yellow('[2]') + '  Medium  — full sentences with punctuation');
-  writeLine('    ' + cyan('[3]') + '  Hard    — complex text with symbols & numbers');
+  writeLine('    ' + green('[1]') + '  쉬움   — 짧고 간단한 문장');
+  writeLine('    ' + yellow('[2]') + '  보통   — 구두점 포함 일반 문장');
+  writeLine('    ' + cyan('[3]') + '  어려움 — 기호·숫자 포함 복잡한 문장');
   writeLine();
   renderDivider();
-  writeLine('  ' + dim('[Esc/Ctrl+C] Quit'));
+  writeLine('  ' + dim('[Esc/Ctrl+C] 종료'));
 
   const key = await waitKey(['1', '2', '3']);
   if (key === null) return null;
