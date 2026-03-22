@@ -1,7 +1,20 @@
 import chalk from 'chalk';
+import type { Countdown } from '../types';
+
+export function formatCountdown(cd: Countdown): string {
+  const remaining = Math.max(0, cd.limitMs - (Date.now() - cd.start));
+  const totalSec = Math.ceil(remaining / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return m > 0 ? `${m}분 ${s}초 남음` : `${s}초 남음`;
+}
 
 export function clearScreen(): void {
-  process.stdout.write('\x1B[2J\x1B[H');
+  process.stdout.write('\x1B[H');
+}
+
+export function clearToEnd(): void {
+  process.stdout.write('\x1B[J');
 }
 
 export function moveTo(row: number, col: number): void {
@@ -21,7 +34,7 @@ export function write(text: string): void {
 }
 
 export function writeLine(text: string = ''): void {
-  process.stdout.write(text + '\n');
+  process.stdout.write(text + '\x1B[K\n');
 }
 
 export function dim(text: string): string {
@@ -72,7 +85,7 @@ function displayWidth(str: string): number {
 }
 
 export function renderHeader(title: string): void {
-  const BOX = 50;
+  const BOX = (process.stdout.columns || 80) - 2;
   const line = '─'.repeat(BOX);
   writeLine(bold(cyan('┌' + line + '┐')));
   const titleWidth = displayWidth(title);
@@ -102,7 +115,7 @@ export function renderTypingLine(
       if (typed === ch) {
         output += green(ch);
       } else {
-        output += red(typed ?? ch);
+        output += red(ch);
       }
     } else if (i === currentIndex) {
       output += chalk.bgWhite.black(ch);

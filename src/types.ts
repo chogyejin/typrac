@@ -2,6 +2,11 @@ export type Language = 'en' | 'ko';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Mode = 'normal' | 'jamo';
 
+export interface Countdown {
+  start: number;  // when CLI started
+  limitMs: number;
+}
+
 export interface SessionState {
   targetText: string;
   nextText: string | null;
@@ -12,6 +17,7 @@ export interface SessionState {
   errorPositions: Set<number>;
   totalErrors: number;
   startTime: number | null;
+  countdown: Countdown | null;
   language: Language;
   difficulty: Difficulty;
   mode: Mode;
