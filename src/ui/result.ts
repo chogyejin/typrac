@@ -26,7 +26,7 @@ export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 
   renderHeader('  TYPRAC — 결과  ');
   writeLine();
 
-  const speedLabel = '글자/분';
+  const speedLabel = '타수';
 
   writeLine('  ' + bold(speedLabel + ':   ') + yellow(String(result.wpm)));
   writeLine('  ' + bold('정확도:    ') + yellow(result.accuracy.toFixed(1) + '%'));

@@ -1,14 +1,15 @@
-import { selectLanguage, selectDifficulty } from './ui/menu.js';
+import { selectLanguage, selectMode, selectDifficulty } from './ui/menu.js';
 import { renderResult } from './ui/result.js';
 import { runSession } from './engine/session.js';
 import { getText } from './data/index.js';
+import { getJamoText } from './data/jamo.js';
 import { showCursor, clearScreen, writeLine } from './ui/renderer.js';
-import type { Language, Difficulty, SessionState } from './types.js';
+import type { Language, Difficulty, Mode, SessionState } from './types.js';
 
 function setupCleanup(): void {
   const cleanup = (): void => {
     showCursor();
-    process.stdout.write('\x1B[?25h'); // ensure cursor visible
+    process.stdout.write('\x1B[?25h');
     process.stdout.write('\n');
     process.exit(0);
   };
@@ -21,6 +22,7 @@ export async function run(): Promise<void> {
   setupCleanup();
 
   let language: Language | null = null;
+  let mode: Mode | null = null;
   let difficulty: Difficulty | null = null;
   let targetText: string | null = null;
 
@@ -32,18 +34,29 @@ export async function run(): Promise<void> {
       if (language === null) break;
     }
 
+    // Mode selection
+    if (mode === null) {
+      mode = await selectMode(language);
+      if (mode === null) {
+        language = null;
+        continue;
+      }
+    }
+
     // Difficulty selection
     if (difficulty === null) {
-      difficulty = await selectDifficulty();
+      difficulty = await selectDifficulty(mode);
       if (difficulty === null) {
-        language = null; // go back to language selection
+        mode = null;
         continue;
       }
     }
 
     // Get text (reuse on retry)
     if (targetText === null) {
-      targetText = getText(language, difficulty);
+      targetText = mode === 'jamo'
+        ? getJamoText(language, difficulty)
+        : getText(language, difficulty);
     }
 
     const initialState: SessionState = {
@@ -59,18 +72,21 @@ export async function run(): Promise<void> {
 
     const result = await runSession(initialState);
 
-    // null = quit/esc, 'restart' = Ctrl+R during typing
+    // null = quit, 'restart' = Ctrl+R during typing
     if (result === null) break;
-    if (result === 'restart') continue;
+    if (result === 'restart') {
+      targetText = null; // 재시작 시 새 텍스트
+      continue;
+    }
 
     // Show result screen
     const action = await renderResult(result);
 
     if (action === 'retry') {
-      // Keep same text, language, difficulty
       continue;
     } else if (action === 'menu') {
       language = null;
+      mode = null;
       difficulty = null;
       targetText = null;
       continue;

@@ -1,5 +1,6 @@
 export type Language = 'en' | 'ko';
 export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Mode = 'normal' | 'jamo';
 
 export interface SessionState {
   targetText: string;

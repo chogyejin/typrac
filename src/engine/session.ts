@@ -36,7 +36,7 @@ function renderScreen(state: SessionState): void {
   const speed = calcSpeed(state.currentIndex, elapsed, state.language);
   const correct = countCorrect(state.typedChars, state.targetText);
   const accuracy = calcAccuracy(correct, state.currentIndex);
-  const speedLabel = '글자/분';
+  const speedLabel = '타수';
   const totalChars = [...state.targetText].length;
   const progress = Math.round((state.currentIndex / totalChars) * 100);
 
