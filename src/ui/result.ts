@@ -21,6 +21,8 @@ function renderResultScreen(
   elapsedMs: number,
   countdown: Countdown | null,
   exitPending: boolean,
+  onSave: (() => void) | null,
+  saved: boolean,
 ): void {
   clearScreen();
   renderHeader("  TYPRAC — 결과  ");
@@ -36,8 +38,15 @@ function renderResultScreen(
   writeLine();
   renderDivider();
   writeLine();
-  writeLine("  " + green("[R]") + "  같은 문장 다시 하기");
+  writeLine("  " + green("[R]") + "  이 모드 다시하기");
   writeLine("  " + cyan("[M]") + "  메인 메뉴");
+  if (onSave !== null) {
+    if (saved) {
+      writeLine("  " + dim("[S]") + "  " + green("저장됨 ✓"));
+    } else {
+      writeLine("  " + yellow("[S]") + "  기록 저장");
+    }
+  }
   if (exitPending) {
     writeLine("  " + yellow("한 번 더 누르면 종료됩니다."));
   }
@@ -51,11 +60,23 @@ export function renderResult(
   result: SessionResult,
   elapsedMs: number,
   countdown: Countdown | null,
+  onSave: (() => void) | null = null,
 ): Promise<"retry" | "menu" | "quit"> {
   let exitPending = false;
   let exitTimer: ReturnType<typeof setTimeout> | null = null;
+  let saved = false;
 
-  renderResultScreen(result, elapsedMs, countdown, false);
+  const render = () =>
+    renderResultScreen(
+      result,
+      elapsedMs,
+      countdown,
+      exitPending,
+      onSave,
+      saved,
+    );
+
+  render();
 
   return new Promise((resolve) => {
     process.stdin.setRawMode(true);
@@ -70,11 +91,11 @@ export function renderResult(
           process.exit(0);
         }
         exitPending = true;
-        renderResultScreen(result, elapsedMs, countdown, true);
+        render();
         exitTimer = setTimeout(() => {
           exitPending = false;
           exitTimer = null;
-          renderResultScreen(result, elapsedMs, countdown, false);
+          render();
         }, 2000);
         return;
       }
@@ -84,9 +105,15 @@ export function renderResult(
           clearTimeout(exitTimer);
           exitTimer = null;
         }
-        renderResultScreen(result, elapsedMs, countdown, false);
+        render();
       }
       const k = key.toLowerCase();
+      if (k === "s" && onSave !== null && !saved) {
+        onSave();
+        saved = true;
+        render();
+        return;
+      }
       if (k === "r") {
         cleanup();
         resolve("retry");
