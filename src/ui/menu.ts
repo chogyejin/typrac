@@ -1,4 +1,4 @@
-import type { Language, Difficulty, Mode } from '../types.js';
+import type { Language, Difficulty, Mode } from '../types';
 import {
   clearScreen,
   writeLine,
@@ -9,8 +9,8 @@ import {
   green,
   renderDivider,
   renderHeader,
-} from './renderer.js';
-import { isCtrlC, isEsc } from '../engine/input.js';
+} from './renderer';
+import { isCtrlC, isEsc } from '../engine/input';
 
 function waitKey(options: string[]): Promise<string | null> {
   return new Promise((resolve) => {
@@ -19,7 +19,7 @@ function waitKey(options: string[]): Promise<string | null> {
     process.stdin.resume();
 
     function onData(key: string): void {
-      if (isCtrlC(key) || isEsc(key)) {
+      if (isCtrlC(key)) {
         process.stdin.removeListener('data', onData);
         process.stdin.setRawMode(false);
         process.stdin.pause();
@@ -48,7 +48,7 @@ export async function selectLanguage(): Promise<Language | null> {
   writeLine('    ' + yellow('[2]') + '  한국어');
   writeLine();
   renderDivider();
-  writeLine('  ' + dim('[Esc/Ctrl+C] 종료'));
+  writeLine('  ' + dim('[Ctrl+C] 종료'));
 
   const key = await waitKey(['1', '2']);
   if (key === null) return null;
@@ -69,7 +69,7 @@ export async function selectMode(lang: Language): Promise<Mode | null> {
   }
   writeLine();
   renderDivider();
-  writeLine('  ' + dim('[Esc/Ctrl+C] 뒤로'));
+  writeLine('  ' + dim('[Ctrl+C] 종료'));
 
   const key = await waitKey(['1', '2']);
   if (key === null) return null;
@@ -93,7 +93,7 @@ export async function selectDifficulty(mode: Mode = 'normal'): Promise<Difficult
   }
   writeLine();
   renderDivider();
-  writeLine('  ' + dim('[Esc/Ctrl+C] 종료'));
+  writeLine('  ' + dim('[Ctrl+C] 종료'));
 
   const key = await waitKey(['1', '2', '3']);
   if (key === null) return null;

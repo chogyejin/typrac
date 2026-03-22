@@ -1,4 +1,4 @@
-import type { Language } from '../types.js';
+import type { Language } from '../types';
 
 const HANGUL_START = 0xAC00;
 const HANGUL_END = 0xD7A3;

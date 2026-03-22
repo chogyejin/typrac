@@ -1,10 +1,10 @@
-import { selectLanguage, selectMode, selectDifficulty } from './ui/menu.js';
-import { renderResult } from './ui/result.js';
-import { runSession } from './engine/session.js';
-import { getText } from './data/index.js';
-import { getJamoText } from './data/jamo.js';
-import { showCursor, clearScreen, writeLine } from './ui/renderer.js';
-import type { Language, Difficulty, Mode, SessionState } from './types.js';
+import { selectLanguage, selectMode, selectDifficulty } from './ui/menu';
+import { renderResult } from './ui/result';
+import { runSession } from './engine/session';
+import { getText } from './data/index';
+import { getJamoText } from './data/jamo';
+import { showCursor, clearScreen, writeLine } from './ui/renderer';
+import type { Language, Difficulty, Mode, SessionState } from './types';
 
 function setupCleanup(): void {
   const cleanup = (): void => {

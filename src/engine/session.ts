@@ -1,4 +1,4 @@
-import type { SessionState, SessionResult } from '../types.js';
+import type { SessionState, SessionResult } from '../types';
 import {
   clearScreen,
   writeLine,
@@ -9,8 +9,8 @@ import {
   green,
   renderDivider,
   renderTypingLine,
-} from '../ui/renderer.js';
-import { calcSpeed, calcAccuracy, countCorrect } from './stats.js';
+} from '../ui/renderer';
+import { calcSpeed, calcAccuracy, countCorrect } from './stats';
 import {
   isCtrlC,
   isEsc,
@@ -18,7 +18,7 @@ import {
   isPrintable,
   isCtrlR,
   isEnter,
-} from './input.js';
+} from './input';
 
 function formatTime(ms: number): string {
   const totalTenths = Math.floor(ms / 100);

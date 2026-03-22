@@ -1,4 +1,4 @@
-import type { Language, Difficulty } from '../types.js';
+import type { Language, Difficulty } from '../types';
 
 const KO_CONSONANTS_BASIC = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const KO_CONSONANTS_DOUBLE = ['ㄲ', 'ㄸ', 'ㅃ', 'ㅆ', 'ㅉ'];

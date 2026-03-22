@@ -1,4 +1,4 @@
-import type { SessionResult } from '../types.js';
+import type { SessionResult } from '../types';
 import {
   clearScreen,
   writeLine,
@@ -9,8 +9,8 @@ import {
   dim,
   renderDivider,
   renderHeader,
-} from './renderer.js';
-import { isCtrlC, isEsc } from '../engine/input.js';
+} from './renderer';
+import { isCtrlC, isEsc } from '../engine/input';
 
 function formatTime(ms: number): string {
   const totalTenths = Math.floor(ms / 100);
@@ -38,7 +38,7 @@ export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 
   writeLine();
   writeLine('  ' + green('[R]') + '  같은 문장 다시 하기');
   writeLine('  ' + cyan('[M]') + '  메인 메뉴');
-  writeLine('  ' + dim('[Q/Esc]') + '  종료');
+  writeLine('  ' + dim('[Q/Ctrl+C]') + '  종료');
 
   return new Promise((resolve) => {
     process.stdin.setRawMode(true);
@@ -53,7 +53,7 @@ export function renderResult(result: SessionResult): Promise<'retry' | 'menu' | 
       } else if (k === 'm') {
         cleanup();
         resolve('menu');
-      } else if (k === 'q' || isEsc(key) || isCtrlC(key)) {
+      } else if (k === 'q' || isCtrlC(key)) {
         cleanup();
         resolve('quit');
       }
