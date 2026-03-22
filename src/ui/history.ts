@@ -176,7 +176,10 @@ export function showHistory(
 
     function clampCursor(): void {
       const max = Math.min(PAGE_SIZE, records.length - page * PAGE_SIZE) - 1;
-      cursor = Math.min(cursor, page * PAGE_SIZE + Math.max(0, max));
+      cursor = Math.max(
+        page * PAGE_SIZE,
+        Math.min(cursor, page * PAGE_SIZE + Math.max(0, max)),
+      );
     }
 
     const render = () =>

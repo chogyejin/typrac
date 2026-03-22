@@ -82,8 +82,6 @@ export function runSession(
       typedChars: [],
       currentIndex: 0,
       startTime: null,
-      totalErrors: 0,
-      errorPositions: new Set(),
     };
     const targetChars = [...state.targetText];
     let completed = false;
@@ -193,10 +191,7 @@ export function runSession(
         if (state.currentIndex >= targetChars.length) break;
         const expected = targetChars[state.currentIndex];
         state.typedChars.push(ch);
-        if (ch !== expected) {
-          state.errorPositions.add(state.currentIndex);
-          state.totalErrors++;
-        }
+
         state.currentIndex++;
 
         if (state.mode === "jamo") {

@@ -14,8 +14,7 @@ export interface SessionState {
   sentenceTotal: number;
   typedChars: string[];
   currentIndex: number;
-  errorPositions: Set<number>;
-  totalErrors: number;
+
   startTime: number | null;
   countdown: Countdown | null;
   language: Language;
