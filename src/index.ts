@@ -49,8 +49,6 @@ function makeState(
     sentenceTotal: texts.length,
     typedChars: [],
     currentIndex: 0,
-    errorPositions: new Set(),
-    totalErrors: 0,
     startTime: null,
     language,
     difficulty,
@@ -135,7 +133,6 @@ export async function run(): Promise<void> {
     let language: Language | null = null;
     let mode: Mode | null = null;
     let difficulty: Difficulty | null = null;
-    let gameStart: number | null = null;
     let backToMain = false;
 
     while (!backToMain) {
@@ -145,13 +142,11 @@ export async function run(): Promise<void> {
           backToMain = true;
           break;
         }
-        gameStart = Date.now();
       }
       if (mode === null) {
         mode = await selectMode(language, countdown ?? undefined);
         if (mode === null) {
           language = null;
-          gameStart = null;
           continue;
         }
       }
@@ -199,30 +194,35 @@ export async function run(): Promise<void> {
       }
       if (results.length === 0) continue;
 
-      const elapsedMs = Date.now() - gameStart!;
       const merged = mergeResults(results);
 
-      // 일반 모드 결과 저장
-      if (mode === "normal") {
-        saveRecord({
-          date: new Date().toISOString(),
-          language: merged.language,
-          difficulty: merged.difficulty,
-          wpm: merged.wpm,
-          accuracy: merged.accuracy,
-          elapsedMs: merged.elapsedMs,
-          totalErrors: merged.totalErrors,
-          totalChars: merged.totalChars,
-        });
-      }
+      const onSave =
+        mode === "normal"
+          ? () => {
+              saveRecord({
+                date: new Date().toISOString(),
+                language: merged.language,
+                difficulty: merged.difficulty,
+                wpm: merged.wpm,
+                accuracy: merged.accuracy,
+                elapsedMs: merged.elapsedMs,
+                totalErrors: merged.totalErrors,
+                totalChars: merged.totalChars,
+              });
+            }
+          : null;
 
-      const action = await renderResult(merged, elapsedMs, countdown);
+      const action = await renderResult(
+        merged,
+        merged.elapsedMs,
+        countdown,
+        onSave,
+      );
       if (action === "retry") {
         continue;
       }
       if (action === "menu") {
         backToMain = true;
-        break;
       }
       break;
     }
