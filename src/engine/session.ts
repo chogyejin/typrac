@@ -58,7 +58,7 @@ function renderScreen(state: SessionState): void {
   if (state.currentIndex >= [...state.targetText].length) {
     writeLine('  ' + dim('[Enter/Space] 결과 보기   [Ctrl+R] 재시작   [Esc] 종료'));
   } else {
-    writeLine('  ' + dim('[Esc/Ctrl+C] 종료   [Ctrl+R] 재시작'));
+    writeLine('  ' + dim('[Ctrl+C] 종료   [Ctrl+R] 재시작'));
   }
 }
 
@@ -100,12 +100,6 @@ export function runSession(
 
     process.stdin.on('data', (key: string) => {
       if (isCtrlC(key)) {
-        cleanup();
-        resolve(null);
-        return;
-      }
-
-      if (isEsc(key)) {
         cleanup();
         resolve(null);
         return;
